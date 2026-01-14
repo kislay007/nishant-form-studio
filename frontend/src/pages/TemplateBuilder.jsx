@@ -416,7 +416,11 @@ const TemplateBuilder = () => {
               </Select>
             </div>
 
-            {selectedField.type === 'TEXT' && (
+            {(selectedField.type === 'TEXT' || 
+              selectedField.type === 'TEXTAREA' ||
+              selectedField.type === 'NUMBER' ||
+              selectedField.type === 'EMAIL' ||
+              selectedField.type === 'PHONE') && (
               <>
                 <div>
                   <Label htmlFor="font-size">Font Size (pt)</Label>
