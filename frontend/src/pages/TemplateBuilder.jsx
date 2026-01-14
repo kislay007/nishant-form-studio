@@ -42,7 +42,7 @@ const DraggableResizableField = ({ field, isSelected, onClick, onUpdate, canvasS
     }
     
     if (field.type === 'CHECKBOX' || field.type === 'RADIO') {
-      return value ? '✓' : '';
+      return value ? 'X' : '';
     }
     
     return value || field.key;
