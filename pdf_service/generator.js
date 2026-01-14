@@ -72,7 +72,8 @@ async function generatePDF(baseFileUrl, fieldSchema, payload, options = {}) {
 
         case 'CHECKBOX':
           if (value === true || value === 'true' || value === 1) {
-            const tickChar = field.style.tickChar || '✓';
+            // Use 'X' instead of checkmark for WinAnsi compatibility
+            const tickChar = field.style.tickChar === '✓' ? 'X' : (field.style.tickChar || 'X');
             const tickSize = Math.min(w, h) * 0.7;
             page.drawText(tickChar, {
               x: x + (w - font.widthOfTextAtSize(tickChar, tickSize)) / 2,
