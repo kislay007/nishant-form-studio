@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API } from '../App';
 import { Document, Page, pdfjs } from 'react-pdf';
-import Draggable from 'react-draggable';
+import { DndContext, useDraggable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -15,6 +16,34 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
+// Draggable Field Component
+const DraggableField = ({ field, isSelected, onClick, canvasScale }) => {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: field.id,
+  });
+
+  const style = {
+    width: `${field.rect.w * canvasScale}px`,
+    height: `${field.rect.h * canvasScale}px`,
+    transform: CSS.Transform.toString(transform),
+    position: 'absolute',
+    left: `${field.rect.x * canvasScale}px`,
+    top: `${field.rect.y * canvasScale}px`,
+    border: isSelected ? '2px solid hsl(212 100% 48%)' : '2px dashed hsl(240 3.8% 46.1%)',
+    backgroundColor: 'rgba(212, 212, 255, 0.1)',
+    cursor: 'move',
+    touchAction: 'none',
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...listeners} {...attributes} onClick={onClick}>
+      <div className="text-xs font-mono px-1 bg-white/90 truncate" style={{ fontSize: '10px' }}>
+        {field.key}
+      </div>
+    </div>
+  );
+};
 
 const TemplateBuilder = () => {
   const { templateId, versionId } = useParams();
