@@ -296,24 +296,62 @@ const Dashboard = () => {
               <Card
                 key={template.id}
                 data-testid={`template-card-${template.key}`}
-                className="hover:shadow-md transition-shadow duration-200 cursor-pointer"
-                onClick={() => handleTemplateClick(template)}
+                className="hover:shadow-md transition-shadow duration-200"
               >
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <FileText className="h-10 w-10 text-muted-foreground" />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // TODO: Settings menu
-                      }}
-                    >
-                      <Settings className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleTemplateClick(template)}>
+                          <FileUp className="h-4 w-4 mr-2" />
+                          Open Builder
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {template.active_version_id ? (
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation();
+                            handleArchiveTemplate(template);
+                          }}>
+                            <Archive className="h-4 w-4 mr-2" />
+                            Archive Version
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation();
+                            handlePublishLatest(template);
+                          }}>
+                            <FileUp className="h-4 w-4 mr-2" />
+                            Publish Latest
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="text-destructive focus:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTemplateToDelete(template);
+                            setDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash className="h-4 w-4 mr-2" />
+                          Delete Template
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                  <CardTitle className="mt-4">{template.name}</CardTitle>
+                  <CardTitle className="mt-4 cursor-pointer" onClick={() => handleTemplateClick(template)}>
+                    {template.name}
+                  </CardTitle>
                   <CardDescription className="font-mono text-xs mt-1">{template.key}</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -334,6 +372,27 @@ const Dashboard = () => {
               </Card>
             ))}
           </div>
+
+          {/* Delete Confirmation Dialog */}
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Template</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete "{templateToDelete?.name}"? This action cannot be undone and will remove all versions of this template.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeleteTemplate}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         )}
       </main>
     </div>
