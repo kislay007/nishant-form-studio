@@ -361,6 +361,17 @@ const APITester = () => {
                   </>
                 )}
               </Button>
+
+              <Button
+                data-testid="copy-curl-button"
+                onClick={copyCurl}
+                disabled={!selectedTemplate}
+                variant="outline"
+                className="w-full font-medium"
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Copy cURL Command
+              </Button>
             </CardContent>
           </Card>
 
