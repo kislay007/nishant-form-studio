@@ -70,10 +70,13 @@ const Dashboard = () => {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
+      // file_url is now a relative URL like /api/files/{filename}
+      const fullFileUrl = `${BACKEND_URL}${uploadResponse.data.file_url}`;
+
       // Create version with uploaded PDF
       const versionResponse = await axios.post(`${API}/versions`, {
         template_id: selectedTemplate.id,
-        file_url: uploadResponse.data.file_url,
+        file_url: fullFileUrl,
         dimensions: { width: 595.28, height: 841.89 }, // A4 default
         field_schema: []
       });
