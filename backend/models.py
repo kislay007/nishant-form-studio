@@ -10,9 +10,15 @@ class VersionStatus(str, Enum):
 
 class FieldType(str, Enum):
     TEXT = "TEXT"
+    TEXTAREA = "TEXTAREA"
+    NUMBER = "NUMBER"
+    EMAIL = "EMAIL"
+    PHONE = "PHONE"
     CHECKBOX = "CHECKBOX"
+    RADIO = "RADIO"
     IMAGE = "IMAGE"
     DATE = "DATE"
+    SIGNATURE = "SIGNATURE"
     SIGNATURE_ANCHOR = "SIGNATURE_ANCHOR"
 
 class FieldRect(BaseModel):
