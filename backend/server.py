@@ -229,7 +229,7 @@ async def generate_pdf(request: GenerateRequest, db: AsyncSession = Depends(get_
             ['node', '/app/pdf_service/generator.js', json.dumps(input_data)],
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=60
         )
         
         if result.returncode != 0:
