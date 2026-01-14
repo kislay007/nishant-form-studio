@@ -122,19 +122,26 @@ const TemplateBuilder = () => {
     setSelectedField(newField);
   };
 
-  const updateFieldPosition = (fieldId, data) => {
+  const updateFieldPosition = (fieldId, delta) => {
     const field = fields.find(f => f.id === fieldId);
     if (!field) return;
 
-    // Convert CSS pixels to PDF points
-    const xPt = data.x / canvasScale;
-    const yPt = data.y / canvasScale;
+    // Convert delta to PDF points
+    const xPt = field.rect.x + (delta.x / canvasScale);
+    const yPt = field.rect.y + (delta.y / canvasScale);
 
     setFields(fields.map(f => 
       f.id === fieldId 
         ? { ...f, rect: { ...f.rect, x: xPt, y: yPt } }
         : f
     ));
+  };
+
+  const handleDragEnd = (event) => {
+    const { active, delta } = event;
+    if (delta.x !== 0 || delta.y !== 0) {
+      updateFieldPosition(active.id, delta);
+    }
   };
 
   const updateFieldProperty = (property, value) => {
