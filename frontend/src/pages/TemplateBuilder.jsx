@@ -15,7 +15,6 @@ import { toast } from 'sonner';
 import { ArrowLeft, Save, Eye, Plus, Trash2 } from 'lucide-react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import 'react-resizable-box/dist/index.css';
 
 // Configure PDF.js worker from jsdelivr CDN (more reliable)
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
