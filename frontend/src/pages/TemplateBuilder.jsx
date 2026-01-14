@@ -370,33 +370,21 @@ const TemplateBuilder = () => {
             />
           </Document>
 
-          {/* Field Overlays */}
-          <div className="absolute inset-0 pointer-events-none">
-            {pageFields.map((field) => (
-              <Draggable
-                key={field.id}
-                position={{ x: field.rect.x * canvasScale, y: field.rect.y * canvasScale }}
-                onStop={(e, data) => updateFieldPosition(field.id, data)}
-                bounds="parent"
-              >
-                <div
-                  data-testid={`field-${field.id}`}
-                  className="absolute pointer-events-auto cursor-move"
-                  style={{
-                    width: `${field.rect.w * canvasScale}px`,
-                    height: `${field.rect.h * canvasScale}px`,
-                    border: selectedField?.id === field.id ? '2px solid hsl(212 100% 48%)' : '2px dashed hsl(240 3.8% 46.1%)',
-                    backgroundColor: 'rgba(212, 212, 255, 0.1)'
-                  }}
-                  onClick={() => setSelectedField(field)}
-                >
-                  <div className="text-xs font-mono px-1 bg-white/90 truncate" style={{ fontSize: '10px' }}>
-                    {field.key}
-                  </div>
+          {/* Field Overlays with DndContext */}
+          <DndContext onDragEnd={handleDragEnd}>
+            <div className="absolute inset-0 pointer-events-none">
+              {pageFields.map((field) => (
+                <div key={field.id} className="pointer-events-auto">
+                  <DraggableField
+                    field={field}
+                    isSelected={selectedField?.id === field.id}
+                    onClick={() => setSelectedField(field)}
+                    canvasScale={canvasScale}
+                  />
                 </div>
-              </Draggable>
-            ))}
-          </div>
+              ))}
+            </div>
+          </DndContext>
         </div>
       </div>
 
