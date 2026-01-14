@@ -23,17 +23,10 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@$
 const DraggableResizableField = ({ field, isSelected, onClick, onUpdate, canvasScale, showPreview, previewValues }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: field.id,
-    disabled: false
   });
 
-  const [size, setSize] = useState({ width: field.rect.w * canvasScale, height: field.rect.h * canvasScale });
-
-  const handleResizeStop = (e, direction, ref, delta) => {
-    const newWidth = (size.width + delta.width) / canvasScale;
-    const newHeight = (size.height + delta.height) / canvasScale;
-    onUpdate(field.id, { rect: { ...field.rect, w: newWidth, h: newHeight } });
-    setSize({ width: size.width + delta.width, height: size.height + delta.height });
-  };
+  const [isResizing, setIsResizing] = useState(false);
+  const resizeRef = useRef(null);
 
   // Get preview content
   const getPreviewContent = () => {
@@ -56,33 +49,72 @@ const DraggableResizableField = ({ field, isSelected, onClick, onUpdate, canvasS
     return value || field.key;
   };
 
+  const handleMouseDown = (e, direction) => {
+    if (!isSelected) return;
+    e.stopPropagation();
+    setIsResizing(true);
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startWidth = field.rect.w * canvasScale;
+    const startHeight = field.rect.h * canvasScale;
+
+    const handleMouseMove = (e) => {
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+
+      let newWidth = startWidth;
+      let newHeight = startHeight;
+
+      if (direction.includes('right')) {
+        newWidth = Math.max(30, startWidth + deltaX);
+      }
+      if (direction.includes('bottom')) {
+        newHeight = Math.max(20, startHeight + deltaY);
+      }
+
+      onUpdate(field.id, { 
+        rect: { 
+          ...field.rect, 
+          w: newWidth / canvasScale, 
+          h: newHeight / canvasScale 
+        } 
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const style = {
+    position: 'absolute',
+    left: `${field.rect.x * canvasScale}px`,
+    top: `${field.rect.y * canvasScale}px`,
+    width: `${field.rect.w * canvasScale}px`,
+    height: `${field.rect.h * canvasScale}px`,
+    transform: CSS.Transform.toString(transform),
+    border: isSelected ? '2px solid hsl(212 100% 48%)' : '2px dashed hsl(240 3.8% 46.1%)',
+    backgroundColor: 'rgba(212, 212, 255, 0.1)',
+    cursor: isDragging ? 'grabbing' : 'grab',
+    touchAction: 'none',
+    zIndex: isSelected ? 10 : 1,
+  };
+
   return (
-    <ResizableBox
-      width={size.width}
-      height={size.height}
-      onResizeStop={handleResizeStop}
-      customStyle={{
-        position: 'absolute',
-        left: `${field.rect.x * canvasScale}px`,
-        top: `${field.rect.y * canvasScale}px`,
-        transform: CSS.Transform.toString(transform),
-        border: isSelected ? '2px solid hsl(212 100% 48%)' : '2px dashed hsl(240 3.8% 46.1%)',
-        backgroundColor: 'rgba(212, 212, 255, 0.1)',
-        cursor: isDragging ? 'grabbing' : 'grab',
-        touchAction: 'none',
-        zIndex: isSelected ? 10 : 1,
-      }}
-      handleStyles={{
-        bottomRight: isSelected ? { display: 'block', width: '8px', height: '8px', backgroundColor: 'hsl(212 100% 48%)', right: '0', bottom: '0' } : { display: 'none' }
-      }}
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...(isResizing ? {} : listeners)}
+      {...(isResizing ? {} : attributes)}
+      onClick={onClick}
     >
-      <div
-        ref={setNodeRef}
-        className="w-full h-full flex items-center justify-start px-1"
-        {...listeners}
-        {...attributes}
-        onClick={onClick}
-      >
+      <div className="w-full h-full flex items-center justify-start px-1">
         <div 
           className="text-xs font-mono truncate"
           style={{ 
@@ -94,7 +126,49 @@ const DraggableResizableField = ({ field, isSelected, onClick, onUpdate, canvasS
           {getPreviewContent()}
         </div>
       </div>
-    </ResizableBox>
+      
+      {/* Resize Handles */}
+      {isSelected && (
+        <>
+          <div
+            style={{
+              position: 'absolute',
+              right: '-4px',
+              top: '0',
+              bottom: '0',
+              width: '8px',
+              cursor: 'ew-resize',
+              backgroundColor: 'hsl(212 100% 48%)',
+            }}
+            onMouseDown={(e) => handleMouseDown(e, 'right')}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              left: '0',
+              right: '0',
+              bottom: '-4px',
+              height: '8px',
+              cursor: 'ns-resize',
+              backgroundColor: 'hsl(212 100% 48%)',
+            }}
+            onMouseDown={(e) => handleMouseDown(e, 'bottom')}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              right: '-4px',
+              bottom: '-4px',
+              width: '8px',
+              height: '8px',
+              cursor: 'nwse-resize',
+              backgroundColor: 'hsl(212 100% 48%)',
+            }}
+            onMouseDown={(e) => handleMouseDown(e, 'right bottom')}
+          />
+        </>
+      )}
+    </div>
   );
 };
 
