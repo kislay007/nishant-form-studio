@@ -8,12 +8,14 @@ import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
 import { toast } from 'sonner';
-import { ArrowLeft, Play, Download } from 'lucide-react';
+import { ArrowLeft, Play, Download, RefreshCw } from 'lucide-react';
 
 const APITester = () => {
   const navigate = useNavigate();
   const [templates, setTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [selectedTemplateObj, setSelectedTemplateObj] = useState(null);
+  const [fieldSchema, setFieldSchema] = useState([]);
   const [payload, setPayload] = useState('{}');
   const [response, setResponse] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -29,22 +31,144 @@ const APITester = () => {
       setTemplates(published);
       if (published.length > 0) {
         setSelectedTemplate(published[0].key);
-        setPayload(JSON.stringify(getSamplePayload(), null, 2));
+        setSelectedTemplateObj(published[0]);
+        await loadTemplateFields(published[0]);
       }
     } catch (error) {
       toast.error('Failed to load templates');
     }
   };
 
-  const getSamplePayload = () => {
-    return {
-      client: {
-        pan_number: "ABCDE1234F",
-        name: "Arjun Kapoor",
-        address: "123 MG Road, Mumbai",
-        us_resident: false
+  const loadTemplateFields = async (template) => {
+    try {
+      const versionRes = await axios.get(`${API}/versions/${template.active_version_id}`);
+      setFieldSchema(versionRes.data.field_schema || []);
+      generateSamplePayload(versionRes.data.field_schema || []);
+    } catch (error) {
+      console.error('Failed to load field schema:', error);
+      setFieldSchema([]);
+      setPayload('{}');
+    }
+  };
+
+  const generateSamplePayload = (fields) => {
+    if (fields.length === 0) {
+      setPayload('{}');
+      return;
+    }
+
+    const payload = {};
+    const comments = [];
+
+    fields.forEach(field => {
+      const keys = field.key.split('.');
+      let current = payload;
+      
+      for (let i = 0; i < keys.length - 1; i++) {
+        if (!current[keys[i]]) {
+          current[keys[i]] = {};
+        }
+        current = current[keys[i]];
       }
-    };
+      
+      const lastKey = keys[keys.length - 1];
+      
+      // Generate sample value based on type
+      let sampleValue = '';
+      let comment = '';
+      
+      switch (field.type) {
+        case 'TEXT':
+        case 'TEXTAREA':
+          sampleValue = 'Sample Text';
+          comment = `// Type: ${field.type}`;
+          break;
+        case 'EMAIL':
+          sampleValue = 'user@example.com';
+          comment = `// Type: EMAIL`;
+          break;
+        case 'PHONE':
+          sampleValue = '+1234567890';
+          comment = `// Type: PHONE`;
+          break;
+        case 'NUMBER':
+          sampleValue = 123;
+          comment = `// Type: NUMBER`;
+          break;
+        case 'CHECKBOX':
+        case 'RADIO':
+          sampleValue = true;
+          comment = `// Type: ${field.type}, Values: true/false`;
+          break;
+        case 'DATE':
+          sampleValue = '2025-01-14';
+          comment = `// Type: DATE, Format: YYYY-MM-DD`;
+          break;
+        default:
+          sampleValue = 'Sample';
+          comment = `// Type: ${field.type}`;
+      }
+      
+      // Add validation info
+      if (field.validation) {
+        if (field.validation.required) {
+          comment += ', REQUIRED';
+        }
+        if (field.validation.regex) {
+          comment += `, Pattern: ${field.validation.regex}`;
+        }
+        if (field.validation.maxLen) {
+          comment += `, MaxLength: ${field.validation.maxLen}`;
+        }
+      }
+      
+      current[lastKey] = sampleValue;
+      comments.push(`"${field.key}": ${comment}`);
+    });
+
+    // Format with comments
+    const jsonStr = JSON.stringify(payload, null, 2);
+    const lines = jsonStr.split('\n');
+    const withComments = [];
+    
+    lines.forEach(line => {
+      withComments.push(line);
+      // Find matching comment for this line
+      const match = line.match(/"([^"]+)":/);
+      if (match) {
+        const fullKey = findFullKey(payload, match[1], '');
+        const comment = comments.find(c => c.startsWith(`"${fullKey}":`));
+        if (comment) {
+          const commentText = comment.split(': ')[1];
+          withComments[withComments.length - 1] = line + '  ' + commentText;
+        }
+      }
+    });
+    
+    setPayload(withComments.join('\n'));
+  };
+
+  const findFullKey = (obj, searchKey, prefix) => {
+    for (const key in obj) {
+      const fullKey = prefix ? `${prefix}.${key}` : key;
+      if (key === searchKey) {
+        return fullKey;
+      }
+      if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
+        const found = findFullKey(obj[key], searchKey, fullKey);
+        if (found) return found;
+      }
+    }
+    return '';
+  };
+
+  const handleTemplateChange = async (templateKey) => {
+    setSelectedTemplate(templateKey);
+    const template = templates.find(t => t.key === templateKey);
+    setSelectedTemplateObj(template);
+    if (template) {
+      await loadTemplateFields(template);
+    }
   };
 
   const handleGenerate = async () => {
@@ -55,9 +179,14 @@ const APITester = () => {
 
     let parsedPayload;
     try {
-      parsedPayload = JSON.parse(payload);
+      // Remove comments before parsing
+      const cleanJson = payload.split('\n').map(line => {
+        const commentIndex = line.indexOf('//');
+        return commentIndex > 0 ? line.substring(0, commentIndex).trim() : line;
+      }).join('\n');
+      parsedPayload = JSON.parse(cleanJson);
     } catch (e) {
-      toast.error('Invalid JSON payload');
+      toast.error('Invalid JSON payload. Please fix syntax errors.');
       return;
     }
 
@@ -143,7 +272,7 @@ const APITester = () => {
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="template-select">Template</Label>
-                <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                <Select value={selectedTemplate} onValueChange={handleTemplateChange}>
                   <SelectTrigger id="template-select" data-testid="api-template-select" className="mt-1.5">
                     <SelectValue placeholder="Select a template" />
                   </SelectTrigger>
@@ -158,7 +287,19 @@ const APITester = () => {
               </div>
 
               <div>
-                <Label htmlFor="payload">Payload (JSON)</Label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <Label htmlFor="payload">Payload (JSON with comments)</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    data-testid="refresh-payload-button"
+                    onClick={() => generateSamplePayload(fieldSchema)}
+                    className="h-7 text-xs"
+                  >
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Refresh
+                  </Button>
+                </div>
                 <Textarea
                   id="payload"
                   data-testid="api-payload-input"
@@ -167,6 +308,9 @@ const APITester = () => {
                   className="mt-1.5 font-mono text-xs h-96"
                   placeholder='{ "client": { "name": "..." } }'
                 />
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Comments show field types and validation rules
+                </p>
               </div>
 
               <Button
