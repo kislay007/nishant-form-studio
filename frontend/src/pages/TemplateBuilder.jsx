@@ -273,7 +273,7 @@ const TemplateBuilder = () => {
         fontSize: 11,
         alignment: 'LEFT',
         color: '#000000',
-        tickChar: '✓'
+        tickChar: 'X'
       },
       validation: {
         required: false,
