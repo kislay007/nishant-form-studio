@@ -6,7 +6,7 @@ import enum
 from datetime import datetime, timezone
 import uuid
 
-DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite+aiosqlite:////app/data/pms_forms.db')
+DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite+aiosqlite:///../data/pms_forms.db')
 
 engine = create_async_engine(DATABASE_URL, echo=False, connect_args={"check_same_thread": False})
 AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)

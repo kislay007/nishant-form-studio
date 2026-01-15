@@ -148,8 +148,8 @@ async def upload_pdf(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
     
     # Save to local storage for MVP
-    upload_dir = Path("/app/uploads")
-    upload_dir.mkdir(exist_ok=True)
+    upload_dir = ROOT_DIR.parent / "uploads"
+    upload_dir.mkdir(parents=True, exist_ok=True)
     
     filename = f"{datetime.now().timestamp()}_{file.filename}"
     file_path = upload_dir / filename
@@ -164,7 +164,7 @@ async def upload_pdf(file: UploadFile = File(...)):
 # Serve uploaded files
 @api_router.get("/files/{filename}")
 async def get_file(filename: str):
-    file_path = Path("/app/uploads") / filename
+    file_path = ROOT_DIR.parent / "uploads" / filename
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="File not found")
     
@@ -226,7 +226,11 @@ async def generate_pdf(request: GenerateRequest, db: AsyncSession = Depends(get_
         }
         
         result = subprocess.run(
-            ['node', '/app/pdf_service/generator.js', json.dumps(input_data)],
+            [
+                'node', 
+                str(ROOT_DIR.parent / 'pdf_service' / 'generator.js'), 
+                json.dumps(input_data)
+            ],
             capture_output=True,
             text=True,
             timeout=60
@@ -278,7 +282,11 @@ async def download_pdf(submission_id: str, db: AsyncSession = Depends(get_db)):
     }
     
     result = subprocess.run(
-        ['node', '/app/pdf_service/generator.js', json.dumps(input_data)],
+        [
+            'node', 
+            str(ROOT_DIR.parent / 'pdf_service' / 'generator.js'), 
+            json.dumps(input_data)
+        ],
         capture_output=True,
         text=True,
         timeout=30
